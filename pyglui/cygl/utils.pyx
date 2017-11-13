@@ -375,7 +375,7 @@ cpdef draw_circle( center_position = (0,0) ,float radius=20,float stroke_width= 
 
 
 
-cpdef draw_concentric_circles( center_position = (0,0), radius = 10 , circle_count = 5, alpha = 1.0):
+cpdef draw_concentric_circles( center_position = (0,0), radius = 10 , circle_count = 5, alpha = 1.0, sharpness = 0.3):
 
     global simple_concentric_circle_shader
 
@@ -385,6 +385,7 @@ cpdef draw_concentric_circles( center_position = (0,0), radius = 10 , circle_cou
 
         uniform vec2 center_position; // position in screen coordinates
         uniform float radius = 10;
+        uniform float sharpness = 0.3;
 
         void main () {
 
@@ -401,6 +402,7 @@ cpdef draw_concentric_circles( center_position = (0,0), radius = 10 , circle_cou
 
         uniform float alpha = 1;
         uniform float radius = 10;
+        uniform float sharpness = 0.3;
         uniform int circle_count = 4;
 
         void main()
@@ -421,7 +423,6 @@ cpdef draw_concentric_circles( center_position = (0,0), radius = 10 , circle_cou
             vec3 color = vec3(colors[colorIndex]);
             vec3 colorOpposit  = vec3(colors2[colorIndex]);
 
-            const float sharpness = 0.3;
             color = mix(color, colorOpposit, smoothstep(0.0, sharpness, segmentDelta) );
 
             if( dist  > circleSize ){
@@ -443,6 +444,7 @@ cpdef draw_concentric_circles( center_position = (0,0), radius = 10 , circle_cou
     simple_concentric_circle_shader.bind()
     simple_concentric_circle_shader.uniform1f('alpha', alpha)
     simple_concentric_circle_shader.uniform1f('radius', radius)
+    simple_concentric_circle_shader.uniform1f('sharpness', sharpness)
     simple_concentric_circle_shader.uniform1i('circle_count', circle_count)
     simple_concentric_circle_shader.uniformf('center_position', center_position )
 

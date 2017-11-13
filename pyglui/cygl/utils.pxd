@@ -22,6 +22,8 @@ cpdef draw_points_norm(points,float size=*,RGBA color=*,float sharpness=*)
 
 cpdef draw_rounded_rect(origin, size, float corner_radius, RGBA color=*, float sharpness=*)
 
+cpdef draw_concentric_circles(center_position=*, radius=*, circle_count=*, alpha=*, sharpness=*)
+
 ctypedef struct fbo_tex_id:
     GLuint fbo_id
     GLuint tex_id
