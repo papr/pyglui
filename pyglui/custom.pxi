@@ -5,17 +5,18 @@ cdef class Seek_Bar(UI_element):
     cdef FitBox bar, seek_handle, trim_left_handle, trim_right_handle
     cdef readonly bint hovering, seeking, trimming_left, trimming_right
     cdef Synced_Value trim_left, trim_right, current
-    cdef object seeking_cb
+    cdef object seeking_cb, timeformat_cb
     cdef Timeline_Menu handle_start_reference
     cdef Icon backwards, play, forwards
 
-    def __cinit__(self, object ctx, int total, object seeking_cb,
+    def __cinit__(self, object ctx, int total, object seeking_cb, object timeformat_cb,
                   Timeline_Menu handle_start_reference, *args, **kwargs):
         self.uid = id(self)
         self.trim_left = Synced_Value('trim_left', ctx, trigger_overlay_only=True)
         self.trim_right = Synced_Value('trim_right', ctx, trigger_overlay_only=True)
         self.current = Synced_Value('current_index', ctx, trigger_overlay_only=True)
         self.seeking_cb = seeking_cb
+        self.timeformat_cb = timeformat_cb
         self.total = total
         self.hovering = False
         self.seeking = False
@@ -109,9 +110,9 @@ cdef class Seek_Bar(UI_element):
         # rect(self.trim_left_handle.org, self.trim_left_handle.size, RGBA(1., 0., 0., 0.2))
         # rect(self.trim_right_handle.org, self.trim_right_handle.size, RGBA(1., 0., 0., 0.2))
 
-        cdef basestring current_str = str(current_val + 1)
-        cdef basestring trim_left_str = str(trim_left_val + 1)
-        cdef basestring trim_right_str = str(trim_right_val + 1)
+        cdef basestring current_str = self.timeformat_cb(current_val)
+        cdef basestring trim_left_str = self.timeformat_cb(trim_left_val)
+        cdef basestring trim_right_str = self.timeformat_cb(trim_right_val)
         cdef float trim_num_offset = 3. * ui_scale
         cdef float nums_y = self.play.button.org.y + self.play.button.size.y - seekbar_number_size * ui_scale / 3
         if self.hovering or self.seeking or self.trimming_left or self.trimming_right:
