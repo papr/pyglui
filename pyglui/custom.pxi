@@ -250,3 +250,11 @@ cdef class Seek_Bar(UI_element):
             elif self.trimming_left and b[1] == 0:
                 self.trimming_left = False
                 should_redraw_overlay = True
+
+
+cdef class Roi_Visualizer(UI_element):
+    def __cinit__(self, object roi, *args, **kwargs):
+        pass
+
+    def __init__(self, *args, **kwargs):
+        pass

@@ -707,14 +707,16 @@ cdef class Scrolling_Menu(Movable_Menu):
 cdef class Container(Base_Menu):
 
     cdef public UI_element horizontal_constraint, vertical_constraint
+    cdef public RGBA debug_color
 
-    def __cinit__(self, pos=(0., 0.), size=(0., 0.), padding=(0., 0.)):
+    def __cinit__(self, pos=(0., 0.), size=(0., 0.), padding=(0., 0.), color=(0., 0., 0., 0.)):
         self.outline = FitBox(Vec2(*pos), Vec2(*size))
         self.element_space = FitBox(Vec2(*padding), Vec2(0., 0.) - Vec2(*padding))
         self.elements = []
         self.horizontal_constraint = None
         self.vertical_constraint = None
         self.label = 'Container'
+        self.debug_color = RGBA(*color)
 
     def init(self, *args, **kwargs):
         pass
@@ -735,6 +737,8 @@ cdef class Container(Base_Menu):
 
         self.outline.compute(copy)
         self.element_space.compute(self.outline)
+
+        self.outline.sketch(self.debug_color)
 
         self.elements.sort(key=sort_key)
         if self.element_space.has_area():
