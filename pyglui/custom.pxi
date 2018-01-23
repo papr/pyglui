@@ -252,9 +252,142 @@ cdef class Seek_Bar(UI_element):
                 should_redraw_overlay = True
 
 
+#                                 top-left   top-right  bot-right  bot-left
+cdef tuple roi_corner_margins = (Vec2( roi_handle_size,  roi_handle_size),
+                                 Vec2(-roi_handle_size,  roi_handle_size),
+                                 Vec2(-roi_handle_size, -roi_handle_size),
+                                 Vec2( roi_handle_size, -roi_handle_size))
+
 cdef class Roi_Visualizer(UI_element):
-    def __cinit__(self, object roi, *args, **kwargs):
-        pass
+    cdef Synced_Value display_mode, img_roi
+    cdef int hovered_corner_idx, dragging
+    cdef object screen_roi
+    cdef Vec2 drag_offset
+
+    def __cinit__(self, object context, *args, **kwargs):
+        self.outline = FitBox(Vec2(0., 0.), Vec2(0., 0.))
+        self.display_mode = Synced_Value('display_mode', context)
+        self.img_roi = Synced_Value('u_r', context)
+        self.hovered_corner_idx = -1
+        self.dragging = -1
+        self.drag_offset = Vec2(0., 0.)
 
     def __init__(self, *args, **kwargs):
         pass
+
+    cpdef sync(self):
+        self.display_mode.sync()
+        self.img_roi.sync()
+
+    cpdef handle_input(self,Input new_input, bint visible, bint parent_read_only = False):
+        global should_redraw
+
+        if self.display_mode.value == 'roi':
+            for idx, corner, margin in zip(range(4), self.outline.corners, roi_corner_margins):
+                if self.mouse_over_corner(corner, margin * ui_scale, new_input.m) or self.dragging == idx:
+                    new_hovered_corner_idx = idx
+                    break
+            else:
+                new_hovered_corner_idx = -1
+
+            if self.hovered_corner_idx != new_hovered_corner_idx:
+                self.hovered_corner_idx = new_hovered_corner_idx
+                should_redraw = True
+
+            for b in new_input.buttons[:]: # list copy for remove to work
+                # left button press
+                if b[0] == 0 and b[1] == 1 and self.hovered_corner_idx >= 0:
+                    self.dragging = self.hovered_corner_idx
+                    self.drag_offset = self.outline.corners[self.dragging] - new_input.m
+                    new_input.buttons.remove(b)
+                # left button release
+                elif b[0] == 0 and b[1] == 0:
+                    self.dragging = -1
+                    new_input.buttons.remove(b)
+
+            if self.dragging == 0:  # top left
+                self.screen_roi.lX = clamp(new_input.m.x + self.drag_offset.x,
+                                           0., self.screen_roi.uX - 1)
+                self.screen_roi.lY = clamp(new_input.m.y + self.drag_offset.y,
+                                           0., self.screen_roi.uY - 1)
+                should_redraw = True
+            elif self.dragging == 1:  # top right
+                self.screen_roi.uX = clamp(new_input.m.x + self.drag_offset.x,
+                                           self.screen_roi.lX + 1, self.screen_roi.max_shape[0] - 1)
+                self.screen_roi.lY = clamp(new_input.m.y + self.drag_offset.y,
+                                           0., self.screen_roi.uY - 1)
+                should_redraw = True
+            elif self.dragging == 2:  # bottom right
+                self.screen_roi.uX = clamp(new_input.m.x + self.drag_offset.x,
+                                           self.screen_roi.lX + 1,
+                                           self.screen_roi.max_shape[0] - 1)
+                self.screen_roi.uY = clamp(new_input.m.y + self.drag_offset.y,
+                                           self.screen_roi.lY + 1,
+                                           self.screen_roi.max_shape[1] - 1)
+                should_redraw = True
+            elif self.dragging == 3:  # bottom left
+                self.screen_roi.lX = clamp(new_input.m.x + self.drag_offset.x,
+                                           0., self.screen_roi.uX - 1)
+                self.screen_roi.uY = clamp(new_input.m.y + self.drag_offset.y,
+                                           self.screen_roi.lY + 1,
+                                           self.screen_roi.max_shape[1] - 1)
+                should_redraw = True
+
+            new_roi = self.screen_roi.translate(self.img_roi.value.max_shape)
+            self.img_roi.value = new_roi
+
+
+    cpdef draw(self,FitBox parent,bint nested=True, bint parent_read_only = False):
+        # calculate outline based on img_roi
+        self.screen_roi = self.img_roi.value.translate(parent.size)
+        self.outline.org = Vec2(self.screen_roi.lX, self.screen_roi.lY)
+        self.outline.size = Vec2(self.screen_roi.uX - self.screen_roi.lX,
+                                 self.screen_roi.uY - self.screen_roi.lY)
+
+        # self.outline.sketch(RGBA(1., 0., 0., .1))
+        cdef RGBA color = RGBA(*roi_darkening_color)
+
+        #  +--+---+--+
+        #  |A | B | C|
+        #  |  +---+  |
+        #  |  |ROI|  |
+        #  |  +---+  |
+        #  |  | D |  |
+        #  +--+---+--+
+
+        # Draw A
+        rect_corners(Vec2(0., 0.), Vec2(self.outline.org.x, parent.size.y), color)
+
+        # Draw C
+        rect_corners(Vec2(self.outline.org.x + self.outline.size.x, 0.),
+                     Vec2(parent.size.x, parent.size.y), color)
+
+        # Draw B
+        rect_corners(Vec2(self.outline.org.x, 0.),
+                     Vec2(self.outline.org.x + self.outline.size.x,
+                          self.outline.org.y), color)
+
+        # Draw D
+        rect_corners(Vec2(self.outline.org.x, self.outline.org.y + self.outline.size.y),
+                     Vec2(self.outline.org.x + self.outline.size.x,
+                          parent.size.y), color)
+
+        rect_midline(self.outline.org, self.outline.size, ui_scale, RGBA(*roi_outline_color))
+
+        if self.display_mode.value == 'roi':
+            for idx, corner, margin in zip(range(4), self.outline.corners, roi_corner_margins):
+
+                # select color
+                if idx == self.hovered_corner_idx:
+                    color = RGBA(*roi_outline_color_hovered)
+                else:
+                    color = RGBA(*roi_outline_color)
+
+                rect(corner, margin*ui_scale, color)
+
+    cdef mouse_over_corner(self, Vec2 corner, Vec2 margin, Vec2 m):
+        lX = min(corner.x, corner.x + margin.x)
+        uX = max(corner.x, corner.x + margin.x)
+        lY = min(corner.y, corner.y + margin.y)
+        uY = max(corner.y, corner.y + margin.y)
+        return lX <= m.x <= uX and lY <= m.y <= uY

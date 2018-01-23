@@ -118,3 +118,8 @@ DEF seekbar_number_size = 15.
 
 DEF timelines_draggable_size = resize_corner_size
 DEF timeline_label_size = text_size
+
+DEF roi_outline_color = color_on
+DEF roi_outline_color_hovered = (1., 0.84, 0.4, 0.8)
+DEF roi_handle_size = 30
+DEF roi_darkening_color = (.0, .0, .0, .2)
