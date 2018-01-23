@@ -33,6 +33,16 @@ cdef inline rect_outline(Vec2 org, Vec2 size, float line_width, RGBA color):
     gl.glVertex3f(org.x+size.x + line_width,org.y - line_width,0.0)
     gl.glEnd()
 
+cdef inline rect_midline(Vec2 org, Vec2 size, float line_width, RGBA color):
+    gl.glColor4f(color.r, color.g, color.b, color.a)
+    gl.glLineWidth(line_width*2)
+    gl.glBegin(gl.GL_LINE_LOOP)
+    gl.glVertex3f(org.x - line_width, org.y - line_width,0.0)
+    gl.glVertex3f(org.x - line_width,org.y+size.y + line_width,0.0)
+    gl.glVertex3f(org.x+size.x + line_width,org.y+size.y + line_width,0.0)
+    gl.glVertex3f(org.x+size.x + line_width,org.y - line_width,0.0)
+    gl.glEnd()
+
 cdef inline rect_corners(Vec2 org, Vec2 end, RGBA color):
     gl.glColor4f(color.r, color.g, color.b, color.a)
     gl.glBegin(gl.GL_POLYGON)
