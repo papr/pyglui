@@ -89,7 +89,8 @@ cdef class UI:
 
     def update_mouse(self,mx,my):
         if self.window.mouse_over(Vec2(mx,my)):
-            self.new_input.dm.x,self.new_input.dm.y = mx-self.new_input.m.x, my-self.new_input.m.y
+            self.new_input.dm.x += mx-self.new_input.m.x
+            self.new_input.dm.y += my-self.new_input.m.y
             self.new_input.m.x,self.new_input.m.y = mx,my
 
 
