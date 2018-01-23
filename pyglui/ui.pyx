@@ -683,6 +683,13 @@ cdef class FitBox:
         def __get__(self):
             return self.org.x+self.size.x/2,self.org.y+self.size.y/2, self.size.x,self.size.y
 
+    property corners:
+        def __get__(self):
+            return (self.org,
+                    self.org + Vec2(self.size.x, 0),
+                    self.org + self.size,
+                    self.org + Vec2(0, self.size.y))
+
     property center:
         def __get__(self):
             return self.org.x+self.size.x/2,self.org.y+self.size.y/2
